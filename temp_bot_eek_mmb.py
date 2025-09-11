@@ -80,7 +80,9 @@ def eek_rezults():
         return ''
     soup4 = BeautifulSoup(temp4.text, features='lxml')  # type: ignore
     temp4_1 = soup4.find(name='table').find_all(name='tr')[1]  # type: ignore
-    return temp4_1.find_all(name='td')[4].text
+    temp4_2 = temp4_1.find_all(name='td')[2].text + ',' + temp4_1.find_all(name='td')[3].text + ',' + temp4_1.find_all(name='td')[4].text  # noqa
+    print(f'{temp4_2}')
+    return temp4_2
 
 
 def mmb():
