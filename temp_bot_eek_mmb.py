@@ -184,7 +184,7 @@ def eek_convert_result(data_in: dict[
 def startup():
     """."""
     bot = telegram.Bot(token=os.getenv('BOT_TOKEN'))
-    # print('Инициализация серверной части')
+    print('Инициализация серверной части')
     CHAT_ID = os.getenv('CHAT_ID')
     bot.send_message(CHAT_ID, 'Инициализация серверной части')
     results_storage = {}
@@ -214,7 +214,7 @@ def startup():
         'moment': now_moment,
         'data': start_mmb
     }
-
+    print('Старт бесконечного цикла серверной части')
     bot.send_message(CHAT_ID, 'Старт бесконечного цикла серверной части')
     return results_storage, bot
 
