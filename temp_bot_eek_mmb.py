@@ -4,16 +4,13 @@ import os
 import requests
 import telegram
 import time
-from bs4 import BeautifulSoup
+import sys
+from bs4 import BeautifulSoup, element, ResultSet
 from dotenv import load_dotenv
 
 EEK_VACANCIES_DELTA = datetime.timedelta(hours=1)
 EEK_REZ_DELTA = datetime.timedelta(hours=1)
 MMB_DELTA = datetime.timedelta(seconds=20)
-
-# File "/app/temp_bot_eek_mmb.py", line 45, in eek_vacancies
-#     temp2_2 = temp2_1.find_all(name='div', attrs={'class': 'vacansy-list-pane__col'})  # type: ignore # noqa
-# AttributeError: 'NoneType' object has no attribute 'find_all
 
 
 def get_respose(url):
@@ -21,12 +18,13 @@ def get_respose(url):
     CHAT_ID = os.getenv('CHAT_ID')
     try:
         response = requests.get(url)
-        response.encoding = 'utf-8'
-        return response
     except requests.RequestException:
-        # print('Ошибка загрузки с сайта ' + str(url))
-        bot.send_message(CHAT_ID, 'Ошибка загрузки с сайта ' + str(url))
+        bot.send_message(CHAT_ID, 'Общая ошибка загрузки с сайта ' + str(url))
         return None
+    if response.status_code != 200:
+        bot.send_message(CHAT_ID, 'Ошибка загрузки с сайта ' + str(url) + ', код ошибки ' + response.status_code)  # noqa
+    response.encoding = 'utf-8'
+    return response
 
 
 def eek_vacancies():
@@ -34,54 +32,68 @@ def eek_vacancies():
     EEK_URL = os.getenv('EEK_URL')
 
     # Список интересующих департаментов
-    DEPTS_OF_INTEREST_NAMES = [
+    DEPTS_OF_INTEREST_NAMES = [  # noqa
         'Департамент информационных технологий',
         'Департамент конкурентной политики и политики в области государственных закупок'  # noqa
     ]
-
+    all_depts_vacs = {}
     temp2 = get_respose(EEK_URL)
     if temp2 is None:
-        return {}
+        return None
+    soup2 = BeautifulSoup(temp2.text, features='lxml')  # type: ignore
+    if soup2 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+        return None
+    temp2_1: element.Tag = soup2.find(name='div', attrs={'class': 'VacanciesSection VacanciesSpoilers SpoilerList _two-cols'})  # type: ignore # noqa
+    if temp2_1 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+        return None
+    temp2_2: ResultSet = temp2_1.find_all(name='div', attrs={'class': 'Spoiler js-spoiler'})  # type: ignore # noqa
+    if temp2_2 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+        return None
 
-    try:
-        soup2 = BeautifulSoup(temp2.text, features='lxml')  # type: ignore
-    except Exception:
-        return {}
+    for dept in temp2_2:
+        curr_dept_name: element.Tag = dept.find(name='div', attrs={'class': 'Spoiler__Title'})  # noqa
+        if curr_dept_name is None:
+            bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+            return None
+        items = curr_dept_name.find_all(name='span')
+        for item in items:
+            item.decompose()
+        curr_dept_name_text = curr_dept_name.text.strip()
+        curr_dept_vacancies_list = []
+        curr_dept_vacs = dept.find_all(name='div', attrs={'class': 'VacanciesSpoilerBlock'})  # noqa
+        if curr_dept_vacs is None:
+            bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+            return None
+        for vacancy in curr_dept_vacs:
+            curr_vac_div = vacancy.find(name='div', attrs={'class': 'VacanciesSpoilerBlock__Text'})  # noqa
+            if curr_vac_div is None:
+                bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+                return None
+            curr_vac_div = curr_vac_div.text.stripe()
+            curr_vac_pos = vacancy.find(name='div', attrs={'class': 'VacanciesSpoilerBlock__Title'})  # noqa
+            if curr_vac_pos is None:
+                bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+                return None
+            curr_vac_pos = curr_vac_pos.text.stripe()
+            curr_vac_pub_date_raw = vacancy.find(name='div', attrs={'class': 'VacanciesSpoilerBlock__Caption'})  # noqa
+            if curr_vac_pub_date_raw is None:
+                bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
+                return None
+            items = curr_vac_pub_date_raw.find_all(name='span')
+            for item in items:
+                item.decompose()
+            curr_vac_pub_date = curr_vac_pub_date_raw.text.strip()
+            curr_dept_vacancies_list.append({
+                'division': curr_vac_div,
+                'position': curr_vac_pos,
+                'pub_date': curr_vac_pub_date,
+            })
 
-    try:
-        temp2_1 = soup2.find(name='div', attrs={'class': 'vacansy-list-pane'})  # type: ignore # noqa
-    except Exception:
-        return {}
-
-    try:
-        temp2_2 = temp2_1.find_all(name='div', attrs={'class': 'vacansy-list-pane__col'})  # type: ignore # noqa
-    except Exception:
-        return {}
-
-    all_depts_vacs = {}
-
-    for item in temp2_2:
-        curr_list_of_anchors_depts = item.find_all(name='a', attrs={'class': 'vacansy-list-pane-item'})  # noqa
-        for dept in curr_list_of_anchors_depts:
-            curr_dept_name = dept.text.strip()
-            curr_dept_vacansyes_block = dept.find_next_sibling()
-            curr_dept_vaсansyes_anc_list = curr_dept_vacansyes_block.find_all(name='a')  # noqa
-
-            curr_dept_vaсansyes_list = []
-            for vacancy in curr_dept_vaсansyes_anc_list:
-                curr_vac_div = vacancy.find(name='span', attrs={'class': 'vacansy-list-grid-department'}).text.strip()  # noqa
-                curr_vac_pos = vacancy.find(name='span', attrs={'class': 'vacansy-list-grid-position'}).text.strip()  # noqa
-                curr_vac_pub_date = vacancy.find(name='span', attrs={'class': 'vacansy-list-grid-date'}).text.strip()  # noqa
-
-                curr_dept_vaсansyes_list.append({
-                    'division': curr_vac_div,
-                    'position': curr_vac_pos,
-                    'pub_date': curr_vac_pub_date,
-                })
-
-            if curr_dept_name in DEPTS_OF_INTEREST_NAMES:
-                all_depts_vacs[curr_dept_name] = curr_dept_vaсansyes_list
-
+        if curr_dept_name_text in DEPTS_OF_INTEREST_NAMES:
+            all_depts_vacs[curr_dept_name_text] = curr_dept_vacancies_list
     return all_depts_vacs
 
 
@@ -91,12 +103,47 @@ def eek_rezults():
 
     temp4 = get_respose(EEK_REZ_URL)
     if temp4 is None:
-        return ''
+        return None
     soup4 = BeautifulSoup(temp4.text, features='lxml')  # type: ignore
-    temp4_1 = soup4.find(name='table').find_all(name='tr')[1]  # type: ignore
-    temp4_2 = temp4_1.find_all(name='td')[2].text + ',' + temp4_1.find_all(name='td')[3].text + ',' + temp4_1.find_all(name='td')[4].text  # noqa
-    print(f'{temp4_2}')
-    return temp4_2
+    if soup4 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    temp4_1 = soup4.find(name='div', attrs={'class': 'VacanciesResultsTable__Row _heading'})  # noqa
+    if temp4_1 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    temp4_2 = temp4_1.next_siblings
+    if (temp4_2 is None) or len(temp4_2) == 0:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    temp4_3 = None
+    for item in temp4_2:
+        if not (isinstance(item, element.Tag)):
+            continue
+        temp4_3 = item
+        break
+    if temp4_3 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    order = temp4_3.find(name='div', attrs={'data-title': 'Приказ об открытии конкурса'})  # noqa
+    if order is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    order = order.text.strip()
+    dept = temp4_3.find(name='div', attrs={'data-title': 'Департаменты'})  # noqa
+    if dept is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    dept = dept.text.strip()
+    pub_date = temp4_3.find(name='div', attrs={'data-title': 'Дата опубликования:'})  # noqa
+    if pub_date is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
+        return None
+    pub_date = pub_date.text.strip()
+
+    temp4_4 = order + ', ' + dept + ', ' + pub_date
+
+    return temp4_4
 
 
 def mmb():
@@ -104,9 +151,15 @@ def mmb():
     MMB_URL = os.getenv('MMB_URL')
     temp3 = get_respose(MMB_URL)
     if temp3 is None:
-        return ''
+        return None
     soup3 = BeautifulSoup(temp3.text, features='lxml')  # type: ignore
+    if soup3 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга сайта ММБ')
+        return None
     temp3_1 = soup3.find(name='select', attrs={'title': 'Список марш-бросков'})  # noqa
+    if temp3_1 is None:
+        bot.send_message(CHAT_ID, 'Ошибка парсинга сайта ММБ')
+        return None
     return temp3_1.find().text  # type: ignore
 
 
@@ -136,19 +189,32 @@ def startup():
     bot.send_message(CHAT_ID, 'Инициализация серверной части')
     results_storage = {}
     now_moment = datetime.datetime.now()
+    start_eek_vacs = eek_vacancies()
+    if start_eek_vacs is None:
+        bot.send_message(CHAT_ID, 'Ошибка по старту, ЕЭК-вакансии, выход')
+        sys.exit()
+    start_eek_rezults = eek_rezults()
+    if start_eek_rezults is None:
+        bot.send_message(CHAT_ID, 'Ошибка по старту, ЕЭК-результаты, выход')
+        sys.exit()
+    start_mmb = mmb()
+    if start_mmb is None:
+        bot.send_message(CHAT_ID, 'Ошибка по старту, ММБ, выход')
+        sys.exit()
+
     results_storage['ЕЭК'] = {
         'moment': now_moment,
-        'data': eek_vacancies()
+        'data': start_eek_vacs
     }
     results_storage['ЕЭК2'] = {
         'moment': now_moment,
-        'data': eek_rezults()
+        'data': start_eek_rezults
     }
     results_storage['ММБ'] = {
         'moment': now_moment,
-        'data': mmb()
+        'data': start_mmb
     }
-    # print('Старт бесконечного цикла серверной части')
+
     bot.send_message(CHAT_ID, 'Старт бесконечного цикла серверной части')
     return results_storage, bot
 
@@ -166,6 +232,9 @@ if __name__ == '__main__':
         if now_moment >= results_storage['ЕЭК']['moment'] + EEK_VACANCIES_DELTA:  # noqa
             result_old_data = results_storage['ЕЭК']['data']
             result_new_data = eek_vacancies()
+            if result_new_data is None:
+                bot.send_message(CHAT_ID, 'Ошибка по ЕЭК-вакансиям')
+                continue
             data_out = '\n'.join([
                 'ЕЭК-вакансии проверка прошла.',
                 'Результат предыдущий:',
@@ -190,6 +259,9 @@ if __name__ == '__main__':
         if now_moment >= results_storage['ЕЭК2']['moment'] + EEK_REZ_DELTA:  # noqa
             result_old_data = results_storage['ЕЭК2']['data']
             result_new_data = eek_rezults()
+            if result_new_data is None:
+                bot.send_message(CHAT_ID, 'Ошибка по ЕЭК-результатам')
+                continue
             data_out = '\n'.join([
                 'ЕЭК-результаты проверка прошла.',
                 'Результат предыдущий:',
@@ -214,6 +286,9 @@ if __name__ == '__main__':
         if now_moment >= results_storage['ММБ']['moment'] + MMB_DELTA:  # noqa
             result_old_data = results_storage['ММБ']['data']
             result_new_data = mmb()
+            if result_new_data is None:
+                bot.send_message(CHAT_ID, 'Ошибка по ММБ')
+                continue
             data_out = '\n'.join([
                 'ММБ проверка прошла.',
                 'Результат предыдущий:',
