@@ -113,7 +113,7 @@ def eek_rezults():
         bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
         return None
     temp4_2 = temp4_1.next_siblings
-    if (temp4_2 is None) or len(temp4_2) == 0:
+    if temp4_2 is None:
         bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-результаты')
         return None
     temp4_3 = None
