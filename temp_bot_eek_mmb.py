@@ -11,6 +11,10 @@ EEK_VACANCIES_DELTA = datetime.timedelta(hours=1)
 EEK_REZ_DELTA = datetime.timedelta(hours=1)
 MMB_DELTA = datetime.timedelta(seconds=20)
 
+# File "/app/temp_bot_eek_mmb.py", line 45, in eek_vacancies
+#     temp2_2 = temp2_1.find_all(name='div', attrs={'class': 'vacansy-list-pane__col'})  # type: ignore # noqa
+# AttributeError: 'NoneType' object has no attribute 'find_all
+
 
 def get_respose(url):
     """."""
@@ -29,7 +33,7 @@ def eek_vacancies():
     """."""
     EEK_URL = os.getenv('EEK_URL')
 
-    # Список интересующих департаментов (пока один)
+    # Список интересующих департаментов
     DEPTS_OF_INTEREST_NAMES = [
         'Департамент информационных технологий',
         'Департамент конкурентной политики и политики в области государственных закупок'  # noqa
@@ -39,10 +43,20 @@ def eek_vacancies():
     if temp2 is None:
         return {}
 
-    soup2 = BeautifulSoup(temp2.text, features='lxml')  # type: ignore
+    try:
+        soup2 = BeautifulSoup(temp2.text, features='lxml')  # type: ignore
+    except Exception:
+        return {}
 
-    temp2_1 = soup2.find(name='div', attrs={'class': 'vacansy-list-pane'})  # type: ignore # noqa
-    temp2_2 = temp2_1.find_all(name='div', attrs={'class': 'vacansy-list-pane__col'})  # type: ignore # noqa
+    try:
+        temp2_1 = soup2.find(name='div', attrs={'class': 'vacansy-list-pane'})  # type: ignore # noqa
+    except Exception:
+        return {}
+
+    try:
+        temp2_2 = temp2_1.find_all(name='div', attrs={'class': 'vacansy-list-pane__col'})  # type: ignore # noqa
+    except Exception:
+        return {}
 
     all_depts_vacs = {}
 
