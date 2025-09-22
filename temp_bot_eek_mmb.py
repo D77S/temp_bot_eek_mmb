@@ -72,12 +72,12 @@ def eek_vacancies():
             if curr_vac_div is None:
                 bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
                 return None
-            curr_vac_div = curr_vac_div.text.stripe()
+            curr_vac_div = curr_vac_div.text.strip()
             curr_vac_pos = vacancy.find(name='div', attrs={'class': 'VacanciesSpoilerBlock__Title'})  # noqa
             if curr_vac_pos is None:
                 bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
                 return None
-            curr_vac_pos = curr_vac_pos.text.stripe()
+            curr_vac_pos = curr_vac_pos.text.strip()
             curr_vac_pub_date_raw = vacancy.find(name='div', attrs={'class': 'VacanciesSpoilerBlock__Caption'})  # noqa
             if curr_vac_pub_date_raw is None:
                 bot.send_message(CHAT_ID, 'Ошибка парсинга ЕЭК-вакансий')
