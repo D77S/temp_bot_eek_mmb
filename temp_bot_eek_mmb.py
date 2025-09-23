@@ -115,7 +115,8 @@ def site1():
     return all_depts_vacs
 
 
-SITES_ARRAY[0].append(site1, False)
+SITES_ARRAY[0].append(site1)
+SITES_ARRAY[0].append(False)
 
 
 def site2():
@@ -165,7 +166,8 @@ def site2():
     return ','.join(order, dept, pub_date)
 
 
-SITES_ARRAY[1].append(site2, True)
+SITES_ARRAY[1].append(site2)
+SITES_ARRAY[1].append(True)
 
 
 def site3():
@@ -185,7 +187,8 @@ def site3():
     return temp3_1.find().text  # type: ignore
 
 
-SITES_ARRAY[2].append(site3, True)
+SITES_ARRAY[2].append(site3)
+SITES_ARRAY[2].append(True)
 
 
 def convert(data_in: dict[
