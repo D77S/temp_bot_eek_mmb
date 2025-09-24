@@ -193,7 +193,6 @@ def main():
     print('Старт бесконечного цикла серверной части')
 
     while True:
-        print('AAA')
         for item in SITES_ARRAY:
             now_moment = datetime.datetime.now()
             if now_moment >= results_storage[item[1]]['moment'] + item[0]:  # noqa
