@@ -181,13 +181,13 @@ def main():
             True,  # не надо конвертировать результаты парсинга
             os.getenv('SITE2_URL')  # URL сайта2
             ],
-        [
-            datetime.timedelta(seconds=int(os.getenv('SITE3_DELTA_S'))),  # период проверки сайта3  # noqa
-            os.getenv('SITE3_LABEL'),  # лабел сайта3
-            site3,  # функция распарсивания по сайту3
-            True,  # надо конвертировать результаты парсинга
-            os.getenv('SITE3_URL')  # URL сайта3
-        ]
+        # [
+        #     datetime.timedelta(seconds=int(os.getenv('SITE3_DELTA_S'))),  # период проверки сайта3  # noqa
+        #     os.getenv('SITE3_LABEL'),  # лабел сайта3
+        #     site3,  # функция распарсивания по сайту3
+        #     True,  # надо конвертировать результаты парсинга
+        #     os.getenv('SITE3_URL')  # URL сайта3
+        # ]
     ]
 
     # try:
@@ -215,7 +215,7 @@ def main():
                 except Exception:
                     bot.send_message(CHAT_ID, f'Ошибка по {item[1]}')
                     continue
-                finally:
+                else:
                     data_out = '\n'.join([
                         f'{item[1]} проверка прошла.',
                         'Результат предыдущий:',
