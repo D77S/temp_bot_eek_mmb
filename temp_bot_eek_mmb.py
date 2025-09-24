@@ -24,10 +24,27 @@ SITES_ARRAY = [
     ]
 ]
 
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+SITE1_URL = os.getenv('SITE1_URL')
+SITE2_URL = os.getenv('SITE2_URL')
+SITE3_URL = os.getenv('SITE3_URL')
+
+
+class TokensException(Exception):
+    """Кастомное исключение по отсутствию токенов."""
+    def __init__(self, message=None):
+        super().__init__(message)
+        print(message)
+
+
+class ServerErrorException(Exception):
+    """Кастомное исключение по ошибке сервера."""
+    pass
+
 
 def get_response(url, bot: telegram.Bot):
     """."""
-    CHAT_ID = os.getenv('CHAT_ID')
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -46,17 +63,15 @@ def get_response(url, bot: telegram.Bot):
     return response
 
 
-def site1(bot):
+def site1(bot: telegram.Bot):
     """."""
-    SITE_URL = os.getenv('EEK_URL')
-
     # Список интересующих констант данного сайта
     ITEMS_OF_INTEREST_NAMES = [  # noqa
         'Департамент информационных технологий',
         'Департамент конкурентной политики и политики в области государственных закупок'  # noqa
     ]
     all_depts_vacs = {}
-    temp2 = get_response(SITE_URL, bot)
+    temp2 = get_response(SITE1_URL, bot)
     if temp2 is None:
         return None
     soup2 = BeautifulSoup(temp2.text, features='lxml')
@@ -119,11 +134,9 @@ SITES_ARRAY[0].append(site1)
 SITES_ARRAY[0].append(False)
 
 
-def site2(bot):
+def site2(bot: telegram.Bot):
     """."""
-    EEK_REZ_URL = os.getenv('EEK_REZ_URL')
-
-    temp4 = get_response(EEK_REZ_URL, bot)
+    temp4 = get_response(SITE2_URL, bot)
     if temp4 is None:
         return None
     soup4 = BeautifulSoup(temp4.text, features='lxml')  # type: ignore
@@ -170,10 +183,9 @@ SITES_ARRAY[1].append(site2)
 SITES_ARRAY[1].append(True)
 
 
-def site3(bot):
+def site3(bot: telegram.Bot):
     """."""
-    MMB_URL = os.getenv('MMB_URL')
-    temp3 = get_response(MMB_URL, bot)
+    temp3 = get_response(SITE3_URL, bot)
     if temp3 is None:
         return None
     soup3 = BeautifulSoup(temp3.text, features='lxml')  # type: ignore
@@ -227,9 +239,23 @@ def startup(bot: telegram.Bot):
     return results_storage
 
 
-if __name__ == '__main__':
+def main():
+    """."""
     load_dotenv()
-    CHAT_ID = os.getenv('CHAT_ID')
+
+    try:
+        if not all([
+            BOT_TOKEN,
+            CHAT_ID,
+            SITE1_URL,
+            SITE2_URL,
+            SITE3_URL
+        ]):
+            raise TokensException('Отсутствуют переменные окружения')
+    except TokensException:
+        sys.exit()
+
+    sys.exit()
     bot = telegram.Bot(token=os.getenv('BOT_TOKEN'))
     print('Инициализация серверной части')
     bot.send_message(CHAT_ID, 'Инициализация серверной части')
@@ -266,3 +292,7 @@ if __name__ == '__main__':
                     results_storage[item[1]]['data'] = result_new_data
 
                 results_storage[item[1]]['moment'] = now_moment
+
+
+if __name__ == '__main__':
+    main()
