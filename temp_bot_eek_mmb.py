@@ -134,6 +134,7 @@ def startup(bot: telegram.Bot, CHAT_ID: str,  SITES_ARRAY):
         start_item = item[2](from_server)
         if start_item is None:
             bot.send_message(CHAT_ID, f'Ошибка по старту, {item[1]}, выход')  # noqa
+            print(f'Ошибка по старту, {item[1]}, выход')
             sys.exit()
         now_moment = datetime.datetime.now()
         results_storage[item[1]] = {
@@ -146,33 +147,46 @@ def startup(bot: telegram.Bot, CHAT_ID: str,  SITES_ARRAY):
 def main():
     """."""
     load_dotenv()
-    BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+    if not all([
+        os.getenv('BOT_TOKEN'),
+        os.getenv('CHAT_ID'),
+        os.getenv('SITE1_URL'),
+        os.getenv('SITE1_LABEL'),
+        os.getenv('SITE1_DELTA_H'),
+        os.getenv('SITE2_URL'),
+        os.getenv('SITE2_LABEL'),
+        os.getenv('SITE2_DELTA_H'),
+        os.getenv('SITE3_URL'),
+        os.getenv('SITE3_LABEL'),
+        os.getenv('SITE3_DELTA_S'),
+    ]):
+        print('Отсутствуют переменные окружения')
+        sys.exit()
+
     CHAT_ID = os.getenv('CHAT_ID')
-    SITE1_URL = os.getenv('SITE1_URL')
-    SITE2_URL = os.getenv('SITE2_URL')
-    SITE3_URL = os.getenv('SITE3_URL')
 
     SITES_ARRAY = [
         [
-            datetime.timedelta(seconds=20),  # период проверки сайта1
-            'ЕЭК-вакансии',  # лабел сайта1
+            datetime.timedelta(hours=int(os.getenv('SITE1_DELTA_H'))),  # период проверки сайта1  # noqa
+            os.getenv('SITE1_LABEL'),  # лабел сайта1
             site1,  # функция распарсивания по сайту1
-            False,  # надо ли неконвертировать результаты парсинга
-            SITE1_URL  # URL сайта1
+            False,  # не надо конвертировать результаты парсинга
+            os.getenv('SITE1_URL')  # URL сайта1
             ],
         [
-            datetime.timedelta(seconds=25),  # период проверки сайта2
-            'ЕЭК-результаты',  # лабел сайта2
+            datetime.timedelta(hours=int(os.getenv('SITE2_DELTA_H'))),  # период проверки сайта2  # noqa
+            os.getenv('SITE2_LABEL'),  # лабел сайта2
             site2,  # функция распарсивания по сайту2
-            True,  # надо ли неконвертировать результаты парсинга
-            SITE2_URL  # URL сайта2
+            True,  # не надо конвертировать результаты парсинга
+            os.getenv('SITE2_URL')  # URL сайта2
             ],
         [
-            datetime.timedelta(seconds=30),  # период проверки сайта3
-            'ММБ-сайт',  # лабел сайта3
+            datetime.timedelta(seconds=int(os.getenv('SITE3_DELTA_S'))),  # период проверки сайта3  # noqa
+            os.getenv('SITE3_LABEL'),  # лабел сайта3
             site3,  # функция распарсивания по сайту3
-            True,  # надо ли неконвертировать результаты парсинга
-            SITE3_URL  # URL сайта3
+            True,  # надо конвертировать результаты парсинга
+            os.getenv('SITE3_URL')  # URL сайта3
         ]
     ]
 
@@ -181,10 +195,6 @@ def main():
     #         raise TokensException('Отсутствуют переменные окружения')
     # except TokensException:
     #     sys.exit()
-
-    if not all([BOT_TOKEN, CHAT_ID, SITE1_URL, SITE2_URL, SITE3_URL]):
-        print('Отсутствуют переменные окружения')
-        sys.exit()
 
     bot = telegram.Bot(token=os.getenv('BOT_TOKEN'))
     print('Инициализация серверной части')
