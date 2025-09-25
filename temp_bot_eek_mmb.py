@@ -19,7 +19,7 @@ from dotenv import load_dotenv
 def get_response(url, bot: telegram.Bot, CHAT_ID):
     """."""
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
     except Exception:
         bot.send_message(CHAT_ID, f'Что-то не так для{url}')
@@ -215,7 +215,7 @@ def main():
                 except Exception:
                     bot.send_message(CHAT_ID, f'Ошибка по {item[1]}')
                     continue
-                finally:
+                else:
                     data_out = '\n'.join([
                         f'{item[1]} проверка прошла.',
                         'Результат предыдущий:',
@@ -231,7 +231,7 @@ def main():
                         results_storage[item[1]]['data'] = result_new_data
 
                     results_storage[item[1]]['moment'] = now_moment
-
+                finally:
                     time.sleep(3)
 
 
