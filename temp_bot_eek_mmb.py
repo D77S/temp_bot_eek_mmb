@@ -205,6 +205,7 @@ def main():
     while True:
         for item in SITES_ARRAY:
             now_moment = datetime.datetime.now()
+            print(f'очередной момент времени {now_moment=}')
             if now_moment >= results_storage[item[1]]['moment'] + item[0]:  # noqa
                 result_old_data = results_storage[item[1]]['data']
                 try:
@@ -231,8 +232,8 @@ def main():
                         results_storage[item[1]]['data'] = result_new_data
 
                     results_storage[item[1]]['moment'] = now_moment
-                finally:
-                    time.sleep(3)
+           
+            time.sleep(10)
 
 
 if __name__ == '__main__':
